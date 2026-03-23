@@ -4,7 +4,7 @@
 - [ROS](https://docs.px4.io/main/en/ros2/user_guide)
 - [Gazebo](https://gazebosim.org/docs/latest/ros_installation/)
 - Clone this repo into ros2 workspace `src` folder
-- Copy `models` folder into `PX4-Autopilot/Tools/simulation/gz/models`
+- Copy contents of `models` folder into `PX4-Autopilot/Tools/simulation/gz/models`
 
 ### Our specific setup
 - Ubuntu 22.04 LTS
@@ -20,19 +20,15 @@
 | COM_OBL_RC_ACT = 2 | Return mode |
 
 ```bash
-pkill -f gz; cd ~/drone_dev/ros2_ws && colcon build --packages-select drone_bringup drone_utils_py && source install/setup.bash && ros2 launch drone_bringup system.launch.py use_sim:=true
+pkill -f gz; cd ~/drone_dev/ros2_ws && colcon build --packages-select drone_bringup drone_interface && source install/setup.bash && ros2 launch drone_bringup system.launch.py use_sim:=true
 ```
-
-MicroXRCEAgent udp4 -p 8888
-make px4_sitl gz_x500_lidar_2d
-./QGroundControl-x86_64.AppImage
 
 ### TODO
 - [x] Move everyting to separete dev folder and test
 - [x] Add the custom drone model to repo
 - [ ] Add custom world
 - [ ] Add setup instructions to repo
-- [ ] Upload to git
+- [x] Upload to github
 - [ ] Improve simulation SLAM
 - [ ] Add navigation
 - [ ] Add dynamic map
@@ -41,3 +37,4 @@ make px4_sitl gz_x500_lidar_2d
 - [ ] Setup raspberry PI as hotspot for direct SSH
 - [ ] Connect to QGroundControl wirelessly
 - [ ] adjust 
+- [ ] Sensor integration

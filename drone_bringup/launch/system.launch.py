@@ -49,6 +49,7 @@ def generate_launch_description():
     )
 
     # ---- QGroundControl (optional sim) ----
+    qgc = ExecuteProcess(
         cmd=['./QGroundControl-x86_64.AppImage'],
         cwd=dev_dir,
         output='screen',
@@ -162,17 +163,17 @@ def generate_launch_description():
         declare_use_sim,
         set_sim_time,
 
-        # agent,
+        agent,
         px4_sitl,
         qgc,
-        # clock_bridge,
+        clock_bridge,
 
-        # lidar_tf,
-        # lidar_bridge,
-        # lidar_real,
-        # wait_px4,
-        # start_px4_odom,
-        # start_slam,
+        lidar_tf,
+        lidar_bridge,
+        lidar_real,
+        wait_px4,
+        start_px4_odom,
+        start_slam,
 
-        # rviz,
+        rviz,
     ])

@@ -19,8 +19,17 @@
 | COM_RC_OVERRIDE = 3 | Enable override during offboard mode |
 | COM_OBL_RC_ACT = 2 | Return mode |
 
+### Build and run SITL simulation
 ```bash
-pkill -f gz; cd ~/drone_dev/ros2_ws && colcon build --packages-select drone_bringup drone_interface && source install/setup.bash && ros2 launch drone_bringup system.launch.py use_sim:=true
+colcon build --packages-select drone_bringup drone_interface && source install/setup.bash && ros2 launch drone_bringup sim.launch.py
+```
+or
+```bash
+pkill -f gz; colcon build --packages-select drone_bringup drone_interface && source install/setup.bash && ros2 launch drone_bringup sim.launch.py
+```
+### Run on real hardware
+```bash
+ros2 launch drone_bringup real.launch.py
 ```
 
 ### TODO

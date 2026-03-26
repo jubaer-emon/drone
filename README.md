@@ -5,6 +5,7 @@
 - [Gazebo](https://gazebosim.org/docs/latest/ros_installation/)
 - Clone this repo into ros2 workspace `src` folder
 - Copy contents of `models` folder into `PX4-Autopilot/Tools/simulation/gz/models`
+- Make sure ros2 workspace and PX4-Autopilot are in the same directory
 
 ### Our specific setup
 - Ubuntu 22.04 LTS
@@ -18,16 +19,34 @@
 | COM_RC_IN_MODE = 5 | RC > MAVL for manual control |
 | COM_RC_OVERRIDE = 3 | Enable override during offboard mode |
 | COM_OBL_RC_ACT = 2 | Return mode |
+EKF2_GPS_CTRL: 1 # enable GPS fusion
+EKF2_HGT_REF: 0 # use baro as height reference initially
+EKF2_BARO_CTRL: 1     # always want baro
+EKF2_MAG_TYPE: 1      # always want mag fusion
+EKF2_MULTI_IMU: 1     # dual IMU on real FC
+param set SENS_IMU_AUTOCAL 0    # disable auto-calibration checks
+param set COM_ARM_IMU_ACC 1.0   # relax accel check threshold
+Tune EKF2 to expect higher noise (keeps realistic noise)
+bashparam set EKF2_ACC_NOISE  0.5   # default 0.35
+param set EKF2_ABL_NOISE  0.02  # default 0.01
+param set EKF2_ABL_LIM    0.8   # default 0.4
+param set EKF2_ABL_TAU    0.5   # default 0.4, slower bias learning
 
 ### Build and run SITL simulation
+- Run QGroundControl
+- Run riv2
+- Goto ros2 workspace and run:
 ```bash
 colcon build --packages-select drone_bringup drone_interface && source install/setup.bash && ros2 launch drone_bringup sim.launch.py
 ```
 or
 ```bash
-pkill -f gz; colcon build --packages-select drone_bringup drone_interface && source install/setup.bash && ros2 launch drone_bringup sim.launch.py
+pkill -9 -f gz; colcon build --packages-select drone_bringup drone_interface && source install/setup.bash && ros2 launch drone_bringup sim.launch.py
 ```
 ### Run on real hardware
+- Run QGroundControl
+- Run riv2
+- Goto ros2 workspace and run:
 ```bash
 ros2 launch drone_bringup real.launch.py
 ```
@@ -36,6 +55,7 @@ ros2 launch drone_bringup real.launch.py
 - [x] Move everyting to separete dev folder and test
 - [x] Add the custom drone model to repo
 - [ ] Add custom world
+- [ ] Get turtlebot3_house working
 - [ ] Add setup instructions to repo
 - [x] Upload to github
 - [ ] Improve simulation SLAM

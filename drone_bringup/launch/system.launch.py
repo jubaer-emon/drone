@@ -113,7 +113,6 @@ def generate_launch_description():
         output='screen'
     )
 
-
     # ---- SLAM (delayed after TF & LiDAR) ----
     slam = Node(
         package='slam_toolbox',

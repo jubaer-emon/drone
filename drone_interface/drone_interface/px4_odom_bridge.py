@@ -1,183 +1,179 @@
 #!/usr/bin/env python3
+
 import rclpy
 from rclpy.node import Node
-from rclpy.qos import qos_profile_sensor_data
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, qos_profile_sensor_data
+
 from px4_msgs.msg import VehicleOdometry
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import TransformStamped
 from builtin_interfaces.msg import Time
 from tf2_ros import TransformBroadcaster
-import math
+
+import numpy as np
+from scipy.spatial.transform import Rotation as R
+
 
 class Px4OdomBridge(Node):
     def __init__(self):
         super().__init__('px4_odom_bridge')
+
+        odom_qos = QoSProfile(
+            reliability=ReliabilityPolicy.RELIABLE,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=10
+        )
+
         self.sub = self.create_subscription(
             VehicleOdometry,
             '/fmu/out/vehicle_odometry',
             self.callback,
             qos_profile_sensor_data
         )
-        self.odom_pub = self.create_publisher(Odometry, '/odom', qos_profile_sensor_data)
+
+        self.odom_pub = self.create_publisher(
+            Odometry, '/odom', odom_qos
+        )
+
         self.tf_broadcaster = TransformBroadcaster(self)
 
-        # Read once — safe since use_sim_time is set before node spin
         self.use_sim_time = self.get_parameter('use_sim_time').value
         self.get_logger().info(
-            f"Stamping with: {'sim /clock' if self.use_sim_time else 'PX4 hardware time'}"
+            f"Stamping with: {'sim /clock' if self.use_sim_time else 'PX4 time'}"
         )
 
+    # ────────────────────────────────────────────────
+    # Frame conversions
+    # ────────────────────────────────────────────────
+
     @staticmethod
-    def _ned_to_enu(q_ned_wxyz):
-        """
-        Convert quaternion from NED body frame to ENU body frame.
-        
-        The NED->ENU frame transform is a fixed rotation:
-        - 90° rotation around Z (maps N->E, E->N)  
-        - 180° rotation around X (maps D->U, flips Z)
-        Combined: rotate by q_frame = [w=0, x=√2/2, y=√2/2, z=0]
-        
-        q_enu = q_frame * q_ned
-        """
-        import math
-        
-        # q_frame for NED->ENU: 180° around X+Y axis
-        # = [w=0, x=1/√2, y=1/√2, z=0]
-        s = math.sqrt(0.5)
-        fw, fx, fy, fz = 0.0, s, s, 0.0
-        
-        w1, x1, y1, z1 = fw, fx, fy, fz
-        w2, x2, y2, z2 = q_ned_wxyz
-        
-        # Hamilton product q_frame * q_ned
-        w = w1*w2 - x1*x2 - y1*y2 - z1*z2
-        x = w1*x2 + x1*w2 + y1*z2 - z1*y2
-        y = w1*y2 - x1*z2 + y1*w2 + z1*x2
-        z = w1*z2 + x1*y2 - y1*x2 + z1*w2
-        
-        norm = math.sqrt(w*w + x*x + y*y + z*z)
-        return [w/norm, x/norm, y/norm, z/norm]
+    def ned_to_enu_position(p):
+        """NED → ENU position"""
+        return [p[1], p[0], -p[2]]
+
+    # @staticmethod
+    # def aircraft_to_baselink_orientation(quat):
+    #     """Rotate quaternion from PX4 aircraft frame (FRD) to ROS base_link frame (FLU)"""
+    #     r = R.from_quat([quat[1], quat[2], quat[3], quat[0]])  # x,y,z,w
+    #     r_rot = R.from_euler('x', np.pi)  # 180° around X
+    #     r_out = r_rot * r
+    #     q_out = r_out.as_quat()
+    #     return np.array([q_out[3], q_out[0], q_out[1], q_out[2]])  # w,x,y,z
+
+    # @staticmethod
+    # def ned_to_enu_orientation(quat):
+    #     """Rotate quaternion from NED → ENU frame"""
+    #     r = R.from_quat([quat[1], quat[2], quat[3], quat[0]])
+    #     # NED→ENU: +90° Z, +180° X
+    #     r_rot = R.from_euler('z', np.pi/2) * R.from_euler('x', np.pi)
+    #     r_out = r_rot * r
+    #     q_out = r_out.as_quat()
+    #     return np.array([q_out[3], q_out[0], q_out[1], q_out[2]])
+
+    # @staticmethod
+    # def px4_to_ros_orientation(quat_px4):
+    #     """Full conversion: Aircraft frame → Base_link → NED→ENU"""
+    #     q_baselink = Px4OdomBridge.aircraft_to_baselink_orientation(quat_px4)
+    #     q_ros = Px4OdomBridge.ned_to_enu_orientation(q_baselink)
+    #     return q_ros
+
+    @staticmethod
+    def px4_to_ros_orientation(quat_px4):
+        r = R.from_quat([quat_px4[1], quat_px4[2], quat_px4[3], quat_px4[0]])
+
+        # Only Z rotation needed after simplification
+        r_rot = R.from_euler('z', np.pi/2)
+
+        r_out = r_rot * r
+        q_out = r_out.as_quat()
+
+        return np.array([q_out[3], q_out[0], q_out[1], q_out[2]])
     
     @staticmethod
-    def _ned_to_enu_quat_old(q_ned):
-        """NED [w,x,y,z] → ENU [w,x,y,z]. Closed-form: swap x/y, negate z."""
-        w, x, y, z = q_ned
-        q = [w, y, x, -z]
-        norm = math.sqrt(sum(v * v for v in q))
-        return [v / norm for v in q] if norm > 1e-9 else [1.0, 0.0, 0.0, 0.0]
+    def frd_to_flu_angular_velocity(w):
+        """Convert angular velocity FRD → FLU"""
+        rot = R.from_euler('x', np.pi)
+        return rot.apply(w)
 
-    @staticmethod
-    def _frd_ned_to_flu_enu(q):
-        """
-        Convert PX4 quaternion (FRD->NED) to ROS quaternion (FLU->ENU).
-        
-        q is [w, x, y, z] representing FRD body -> NED world
-        
-        Two fixed rotations needed:
-        1. NED world -> ENU world:  q1 = [0, 1/√2, 1/√2, 0]  (180° around X+Y)
-        2. FRD body -> FLU body:    q2 = [0, 1, 0, 0]          (180° around X)
-        
-        result = q1 * q * q2_conjugate
-        """
-        import math
-        
-        def qmul(a, b):
-            w1,x1,y1,z1 = a
-            w2,x2,y2,z2 = b
-            return [
-                w1*w2 - x1*x2 - y1*y2 - z1*z2,
-                w1*x2 + x1*w2 + y1*z2 - z1*y2,
-                w1*y2 - x1*z2 + y1*w2 + z1*x2,
-                w1*z2 + x1*y2 - y1*x2 + z1*w2,
-            ]
-        
-        def qnorm(q):
-            n = math.sqrt(sum(v*v for v in q))
-            return [v/n for v in q] if n > 1e-9 else [1,0,0,0]
-        
-        s = math.sqrt(0.5)
-        
-        # NED->ENU world frame rotation
-        q_ned_to_enu = [0.0, s, s, 0.0]
-        
-        # FRD->FLU body frame rotation (180° around X)
-        # conjugate of [0,1,0,0] is [0,-1,0,0]
-        q_frd_to_flu_conj = [0.0, -1.0, 0.0, 0.0]
-        
-        result = qmul(qmul(q_ned_to_enu, q), q_frd_to_flu_conj)
-        return qnorm(result)
+    # ────────────────────────────────────────────────
+    # Callback
+    # ────────────────────────────────────────────────
 
     def callback(self, msg: VehicleOdometry):
-        # ── Timestamp ──────────────────────────────────────────────
-        # if self.use_sim_time:
-        stamp = self.get_clock().now().to_msg()
-        # else:
-        # stamp = Time(
-        #     sec=int(msg.timestamp_sample // 1_000_000),
-        #     nanosec=int((msg.timestamp_sample % 1_000_000) * 1000)
-        # )
 
-        # ── Pose ───────────────────────────────────────────────────
-        # NED → ENU position: (N,E,D) → (E,N,U)
-        px, py, pz = msg.position[1], msg.position[0], -msg.position[2]
+        # ── Time ─────────────────────────────────────
+        if self.use_sim_time:
+            stamp = self.get_clock().now().to_msg()
+        else:
+            stamp = Time(
+                sec=int(msg.timestamp_sample // 1_000_000),
+                nanosec=int((msg.timestamp_sample % 1_000_000) * 1000)
+            )
 
-        # Quaternion: pass as [w,x,y,z] — verify field order first!
-        qw, qx, qy, qz = self._frd_ned_to_flu_enu(
-            [msg.q[0], msg.q[1], msg.q[2], msg.q[3]]
-        )
+        # ── Position ─────────────────────────────────
+        px, py, pz = self.ned_to_enu_position(msg.position)
 
-        # ── Twist (body frame) ─────────────────────────────────────
-        # NED body → ENU body: swap x/y, negate z
-        vx, vy, vz = msg.velocity[1],         msg.velocity[0],         -msg.velocity[2]
-        wx, wy, wz = msg.angular_velocity[1], msg.angular_velocity[0], -msg.angular_velocity[2]
+        # ── Orientation ──────────────────────────────
+        qw, qx, qy, qz = self.px4_to_ros_orientation(msg.q)
 
-        # ── Odometry message ───────────────────────────────────────
+        # ── Linear velocity ──────────────────────────
+        vx, vy, vz = self.ned_to_enu_position(msg.velocity)
+
+        # ── Angular velocity ─────────────────────────
+        ang = np.array(msg.angular_velocity)
+        wx, wy, wz = self.frd_to_flu_angular_velocity(ang)
+
+        # ── Odometry message ─────────────────────────
         odom = Odometry()
-        odom.header.stamp    = stamp
+        odom.header.stamp = stamp
         odom.header.frame_id = 'odom'
-        odom.child_frame_id  = 'base_link'
+        odom.child_frame_id = 'base_link'
 
-        odom.pose.pose.position.x    = float(px)
-        odom.pose.pose.position.y    = float(py)
-        odom.pose.pose.position.z    = float(pz)
+        odom.pose.pose.position.x = float(px)
+        odom.pose.pose.position.y = float(py)
+        odom.pose.pose.position.z = float(pz)
+
         odom.pose.pose.orientation.w = float(qw)
         odom.pose.pose.orientation.x = float(qx)
         odom.pose.pose.orientation.y = float(qy)
         odom.pose.pose.orientation.z = float(qz)
 
-        odom.twist.twist.linear.x  = float(vx)
-        odom.twist.twist.linear.y  = float(vy)
-        odom.twist.twist.linear.z  = float(vz)
+        odom.twist.twist.linear.x = float(vx)
+        odom.twist.twist.linear.y = float(vy)
+        odom.twist.twist.linear.z = float(vz)
+
         odom.twist.twist.angular.x = float(wx)
         odom.twist.twist.angular.y = float(wy)
         odom.twist.twist.angular.z = float(wz)
 
-        # Diagonal covariance (row-major 6×6: x,y,z,roll,pitch,yaw)
-        odom.pose.covariance[0]  = 0.01   # x
-        odom.pose.covariance[7]  = 0.01   # y
-        odom.pose.covariance[14] = 0.01   # z
-        odom.pose.covariance[21] = 0.1    # roll
-        odom.pose.covariance[28] = 0.1    # pitch
-        odom.pose.covariance[35] = 0.1    # yaw
+        # Covariance
+        odom.pose.covariance[0]  = 0.01
+        odom.pose.covariance[7]  = 0.01
+        odom.pose.covariance[14] = 0.01
+        odom.pose.covariance[21] = 0.1
+        odom.pose.covariance[28] = 0.1
+        odom.pose.covariance[35] = 0.1
 
-        odom.twist.covariance[0]  = 0.1   # vx
-        odom.twist.covariance[7]  = 0.1   # vy
-        odom.twist.covariance[14] = 0.1   # vz
-        odom.twist.covariance[21] = 0.2   # wx
-        odom.twist.covariance[28] = 0.2   # wy
-        odom.twist.covariance[35] = 0.2   # wz
+        odom.twist.covariance[0]  = 0.1
+        odom.twist.covariance[7]  = 0.1
+        odom.twist.covariance[14] = 0.1
+        odom.twist.covariance[21] = 0.2
+        odom.twist.covariance[28] = 0.2
+        odom.twist.covariance[35] = 0.2
 
         self.odom_pub.publish(odom)
 
-        # ── TF broadcast ───────────────────────────────────────────
+        # ── TF ──────────────────────────────────────
         t = TransformStamped()
-        t.header.stamp    = stamp
+        t.header.stamp = stamp
         t.header.frame_id = 'odom'
-        t.child_frame_id  = 'base_link'
+        t.child_frame_id = 'base_link'
+
         t.transform.translation.x = float(px)
         t.transform.translation.y = float(py)
         t.transform.translation.z = float(pz)
-        t.transform.rotation      = odom.pose.pose.orientation
+        t.transform.rotation = odom.pose.pose.orientation
+
         self.tf_broadcaster.sendTransform(t)
 
 
@@ -187,3 +183,7 @@ def main(args=None):
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()

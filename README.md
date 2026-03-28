@@ -4,8 +4,7 @@
 - [ROS](https://docs.px4.io/main/en/ros2/user_guide)
 - [Gazebo](https://gazebosim.org/docs/latest/ros_installation/)
 - Clone this repo into ros2 workspace `src` folder
-- Copy contents of `models` folder into `PX4-Autopilot/Tools/simulation/gz/models`
-- Make sure ros2 workspace and PX4-Autopilot are in the same directory
+- https://github.com/ros/sdformat_urdf
 
 ### Our specific setup
 - Ubuntu 22.04 LTS
@@ -31,6 +30,11 @@ bashparam set EKF2_ACC_NOISE  0.5   # default 0.35
 param set EKF2_ABL_NOISE  0.02  # default 0.01
 param set EKF2_ABL_LIM    0.8   # default 0.4
 param set EKF2_ABL_TAU    0.5   # default 0.4, slower bias learning
+
+
+env 
+source /opt/ros/humble/setup.bash
+export ROS_DOMAIN_ID=0
 
 ### Build and run SITL simulation
 - Run QGroundControl
@@ -67,3 +71,5 @@ ros2 launch drone_bringup real.launch.py
 - [ ] Connect to QGroundControl wirelessly
 - [ ] adjust 
 - [ ] Sensor integration
+- [ ] path env variable for px4 and qgc
+- [ ] make urdf for robot state pub to replae static tf

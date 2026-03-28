@@ -31,31 +31,28 @@ def generate_launch_description():
 
     from launch.actions import TimerAction
 
-    slam = TimerAction(
-        period=30.0,  # wait 2 seconds
-        actions=[Node(
-            package='slam_toolbox',
-            executable='async_slam_toolbox_node',
-            name='slam_toolbox',
-            output='screen',
-            parameters=[{
-                'laser_frame': 'lidar_link',
-                'odom_frame': 'odom',
-                'base_frame': 'base_link',
-                'map_frame': 'map',
-                'odom_topic': '/odom',
-                'scan_topic': '/scan',
-                'scan_queue_size': 30,
-                'transform_timeout': 2.0,
-                'tf_buffer_duration': 10.0,
-                'use_scan_matching': True,
-                'use_scan_barycenter': True,
-                'do_loop_closing': True,
-                'minimum_travel_distance': 0.01,
-                'minimum_travel_heading': 0.01,
-                'throttle_scans': 1,
-            }]
-        )]
+    slam = Node(
+        package='slam_toolbox',
+        executable='async_slam_toolbox_node',
+        name='slam_toolbox',
+        output='screen',
+        parameters=[{
+            'laser_frame': 'lidar_link',
+            'odom_frame': 'odom',
+            'base_frame': 'base_link',
+            'map_frame': 'map',
+            'odom_topic': '/odom',
+            'scan_topic': '/scan',
+            'scan_queue_size': 30,
+            'transform_timeout': 2.0,
+            'tf_buffer_duration': 10.0,
+            'use_scan_matching': True,
+            'use_scan_barycenter': True,
+            'do_loop_closing': True,
+            'minimum_travel_distance': 0.01,
+            'minimum_travel_heading': 0.01,
+            'throttle_scans': 1,
+        }]
     )
 
     return LaunchDescription([

@@ -11,11 +11,11 @@ import os
 def generate_launch_description():
     logger = get_logger('sim.launch')
     dev_dir = Path(os.environ.get('DRONE_DEV_DIR', '~')).expanduser()
-    pkg_path = get_package_share_path('drone_bringup')
+    pkg_dir = get_package_share_path('drone_sim')
 
     gz_resoure_path = ':'.join([
-        str(pkg_path / 'worlds'),
-        str(pkg_path / 'models'),
+        str(pkg_dir / 'worlds'),
+        str(pkg_dir / 'models'),
         os.environ.get('GZ_SIM_RESOURCE_PATH', ''),
     ])
  
@@ -46,30 +46,30 @@ def generate_launch_description():
         executable='parameter_bridge',
         arguments=[
             '/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
-            '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock'
+            '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
+            # '/camera/image_raw@sensor_msgs/msg/Image[gz.msgs.Image',
+            # '/camera/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo',
+            # '/range@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
         ],
         output='screen',
     )
 
 
     common_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(pkg_path / 'launch' / 'common.launch.py'),
+        PythonLaunchDescriptionSource(get_package_share_path('drone_bringup') / 'launch' / 'common.launch.py')
     )
 
     gcs = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            pkg_path / 'launch' / 'gcs.launch.py'
-        ),
+        PythonLaunchDescriptionSource(get_package_share_path('drone_bringup') / 'launch' / 'gcs.launch.py')
     )
 
     return LaunchDescription([
         SetParameter(name='use_sim_time', value=True),
 
         gz_sim, 
-        ros_gz_bridge,
+        # ros_gz_bridge,
         
         px4_sitl,
         common_launch,
-
-        # gcs,
+        gcs,
     ])

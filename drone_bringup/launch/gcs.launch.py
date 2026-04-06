@@ -20,8 +20,9 @@ def generate_launch_description():
         package='rviz2',
         executable='rviz2',
         arguments=[
-            '-d', str(get_package_share_path('nav2_bringup') / 'rviz' / 'nav2_default_view.rviz')
+            '-d', str(get_package_share_path('nav2_bringup') / 'rviz' / 'nav2_default_view.rviz'),
         ],
+        parameters=[{'use_sim_time': True}],
         output='screen',
     )
 

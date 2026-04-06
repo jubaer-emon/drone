@@ -31,6 +31,8 @@ param set EKF2_ABL_NOISE  0.02  # default 0.01
 param set EKF2_ABL_LIM    0.8   # default 0.4
 param set EKF2_ABL_TAU    0.5   # default 0.4, slower bias learning
 
+Parameters for simulation
+UXRCE_DDS_SYNCT 0
 
 env 
 source /opt/ros/humble/setup.bash

@@ -31,6 +31,6 @@ endif()
 ament_package()
 
 add_executable(px4_odom_bridge src/px4_odom_bridge.cpp)
-ament_target_dependencies(px4_odom_bridge rclcpp px4_msgs px4_ros_com nav_msgs geometry_msgs)
+ament_target_dependencies(px4_odom_bridge tf2_ros rclcpp px4_msgs px4_ros_com nav_msgs geometry_msgs)
 
 install(TARGETS px4_odom_bridge DESTINATION lib/${PROJECT_NAME})

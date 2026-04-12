@@ -4,6 +4,9 @@
 
 #include <px4_ros_com/frame_transforms.h>
 
+#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/msg/transform_stamped.hpp>
+
 using namespace std::placeholders;
 using px4_msgs::msg::VehicleOdometry;
 
@@ -21,6 +24,8 @@ public:
             std::bind(&OdomBridge::callback, this, _1));
 
         pub_ = this->create_publisher<nav_msgs::msg::Odometry>("/odom", 10);
+
+        tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
     }
 
 private:
@@ -43,8 +48,7 @@ private:
 
         nav_msgs::msg::Odometry odom;
 
-        odom.header.stamp = this->get_clock()->now();
-        odom.header.frame_id = "odom";
+        odom.header.stamp = rclcpp::Time(msg->timestamp * 1000); // PX4 is in microseconds        odom.header.frame_id = "odom";
         odom.child_frame_id = "base_link";
 
         // Pose
@@ -63,10 +67,28 @@ private:
         odom.twist.twist.linear.z = vel_enu.z();
 
         pub_->publish(odom);
+
+        geometry_msgs::msg::TransformStamped t;
+
+        t.header.stamp = odom.header.stamp;
+        t.header.frame_id = "odom";
+        t.child_frame_id = "base_link";
+
+        t.transform.translation.x = pos_enu.x();
+        t.transform.translation.y = pos_enu.y();
+        t.transform.translation.z = pos_enu.z();
+
+        t.transform.rotation.w = q_enu.w();
+        t.transform.rotation.x = q_enu.x();
+        t.transform.rotation.y = q_enu.y();
+        t.transform.rotation.z = q_enu.z();
+
+        tf_broadcaster_->sendTransform(t);
     }
 
     rclcpp::Subscription<VehicleOdometry>::SharedPtr sub_;
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_;
+    std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 };
 
 int main(int argc, char * argv[])

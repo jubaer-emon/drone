@@ -56,18 +56,24 @@ def generate_launch_description():
 
 
     common_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(get_package_share_path('drone_bringup') / 'launch' / 'common.launch.py')
+        PythonLaunchDescriptionSource(
+            get_package_share_path('drone_bringup') 
+            / 'launch' / 'common.launch.py'
+        )
     )
 
     gcs = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(get_package_share_path('drone_bringup') / 'launch' / 'gcs.launch.py')
+        PythonLaunchDescriptionSource(
+            get_package_share_path('drone_bringup') 
+            / 'launch' / 'gcs.launch.py'
+        )
     )
 
     return LaunchDescription([
         SetParameter(name='use_sim_time', value=True),
 
         gz_sim, 
-        # ros_gz_bridge,
+        ros_gz_bridge,
         
         px4_sitl,
         common_launch,

@@ -43,7 +43,7 @@ export ROS_DOMAIN_ID=0
 - Run riv2
 - Goto ros2 workspace and run:
 ```bash
-colcon build --packages-select drone_bringup drone_interface && source install/setup.bash && ros2 launch drone_bringup sim.launch.py
+colcon build --packages-select drone_bringup drone_interface drone_sim && source install/setup.bash && ros2 launch drone_sim sim.launch.py
 ```
 or
 ```bash

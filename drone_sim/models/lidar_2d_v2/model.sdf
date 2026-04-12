@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <sdf version="1.6">
   <model name="lidar_2d_v2">
-    <link name="lidar_link">
+    <link name="laser">
       <pose>0 0 0 0 0 0</pose>
       <inertial>
         <pose>0 0 0.0435 0 0 0</pose>
@@ -49,7 +49,7 @@
       </visual>
       <sensor name="lidar_2d_v2" type="gpu_lidar">
         <topic>/scan</topic>
-        <gz_frame_id>lidar_link</gz_frame_id>
+        <gz_frame_id>laser</gz_frame_id>
         <pose>0 0 0.055 0 0 0</pose>
         <ray>
           <scan>

@@ -13,6 +13,7 @@ find_package(nav_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(px4_ros_com REQUIRED)
 
@@ -28,9 +29,32 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_package()
-
 add_executable(px4_odom_bridge src/px4_odom_bridge.cpp)
-ament_target_dependencies(px4_odom_bridge tf2_ros rclcpp px4_msgs px4_ros_com nav_msgs geometry_msgs)
+add_executable(slam_pos_bridge src/slam_pos_bridge.cpp)
+
+ament_target_dependencies(px4_odom_bridge
+  tf2_ros
+  rclcpp 
+  px4_msgs 
+  px4_ros_com 
+  nav_msgs 
+  geometry_msgs
+)
+
+ament_target_dependencies(slam_pos_bridge
+  rclcpp
+  px4_msgs
+  px4_ros_com
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+)
+
+target_include_directories(slam_pos_bridge PRIVATE
+  ${EIGEN3_INCLUDE_DIRS}
+)
 
 install(TARGETS px4_odom_bridge DESTINATION lib/${PROJECT_NAME})
+install(TARGETS slam_pos_bridge DESTINATION lib/${PROJECT_NAME})
+
+ament_package()

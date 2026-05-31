@@ -54,6 +54,12 @@ def generate_launch_description():
         output='screen',
     )
 
+    slam_pos = Node(
+        package='drone_interface',
+        executable='slam_pos_bridge',
+        output='screen',
+    )
+
     slam = Node(
         package='slam_toolbox',
         executable='async_slam_toolbox_node',
@@ -87,4 +93,5 @@ def generate_launch_description():
         px4_odom,
 
         slam,
+        slam_pos,
     ])

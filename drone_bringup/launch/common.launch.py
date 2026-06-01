@@ -1,7 +1,9 @@
 from launch import LaunchDescription
-from launch.actions import ExecuteProcess, TimerAction 
+from launch.actions import ExecuteProcess, TimerAction, IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from launch.logging import get_logger
+from ament_index_python.packages import get_package_share_path
 
 def generate_launch_description():
     logger = get_logger('common.launch')
@@ -60,28 +62,54 @@ def generate_launch_description():
         output='screen',
     )
 
+    # slam = Node(
+    #     package='slam_toolbox',
+    #     executable='async_slam_toolbox_node',
+    #     name='slam_toolbox',
+    #     output='screen',
+    #     parameters=[{
+    #         'laser_frame': 'laser',
+    #         'odom_frame': 'odom',
+    #         'base_frame': 'base_link',
+    #         'map_frame': 'map',
+    #         'odom_topic': '/odom',
+    #         'scan_topic': '/scan',
+    #         'scan_queue_size': 30,
+    #         'transform_timeout': 2.0,
+    #         'tf_buffer_duration': 10.0,
+    #         'use_scan_matching': True,
+    #         'use_scan_barycenter': True,
+    #         'do_loop_closing': True,
+    #         'minimum_travel_distance': 0.01,
+    #         'minimum_travel_heading': 0.01,
+    #         'throttle_scans': 1,
+    #     }]
+    # )
+
     slam = Node(
         package='slam_toolbox',
         executable='async_slam_toolbox_node',
         name='slam_toolbox',
         output='screen',
-        parameters=[{
-            'laser_frame': 'laser',
-            'odom_frame': 'odom',
-            'base_frame': 'base_link',
-            'map_frame': 'map',
-            'odom_topic': '/odom',
-            'scan_topic': '/scan',
-            'scan_queue_size': 30,
-            'transform_timeout': 2.0,
-            'tf_buffer_duration': 10.0,
-            'use_scan_matching': True,
-            'use_scan_barycenter': True,
-            'do_loop_closing': True,
-            'minimum_travel_distance': 0.01,
-            'minimum_travel_heading': 0.01,
-            'throttle_scans': 1,
-        }]
+        parameters=[
+            get_package_share_path('drone_bringup') 
+            / 'config' 
+            / 'slam_toolbox_indoor_drone.yaml',
+        ]
+    )
+
+    slam2 = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            get_package_share_path('slam_toolbox') 
+            / 'launch' 
+            / 'online_async_launch.py',
+        ),
+       launch_arguments={
+           'params_file': 
+                get_package_share_path('drone_bringup') 
+                / 'config' 
+                / 'slam_toolbox_indoor_drone.yaml',
+       }.items(),
     )
 
     return LaunchDescription([

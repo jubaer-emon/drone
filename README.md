@@ -33,12 +33,13 @@
 | EKF2_MAG_TYPE = 5     | Completely ignore magnetometer        |
 | SENS_IMU_MODE = 0     | allows both raw IMU streams to pass   |
 | EKF2_MULTI_IMU = 2 (1 for sim) | Enable dual-IMU multi-instance EKF redundancy |
-| EKF2_EV_DELAY = 50 (0 for sim) | processing delay of SLAM (**Adjust**) |
+| EKF2_EV_DELAY = 50 (0 for sim) | processing delay of SLAM (**Adjust**. Start high (100), tune down later) |
 | EKF2_EV_POS_X,Y,Z     | LIDAR distance from physical center of the FC |
 | EKF2_OF_POS_X,Y,Z 0.2,0.0,0.2 | Optical flow sensor positoin  |
 | UXRCE_DDS_SYNCT = 1 (0 for sim) | Micro-XRCE-DDS Time Synchronization |
 | COM_ARM_WO_GPS = 2    | Allows arming without a GPS home lock |
 | MPC_ALT_MODE = 0      | Fixed Altitude (not Terrain following)|
+| SYS_HAS_MAG = 0       |                                       |
 
 ### Need to test
 | QGC Parameters        | Description                           |

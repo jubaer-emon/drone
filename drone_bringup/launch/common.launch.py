@@ -54,13 +54,14 @@ def generate_launch_description():
         package='drone_interface',
         executable='px4_odom_bridge',
         output='screen',
+        # parameters=[{'use_sim_time': True}],
     )
 
-    slam_pos = Node(
-        package='drone_interface',
-        executable='slam_pos_bridge',
-        output='screen',
-    )
+    # slam_pos = Node(
+    #     package='drone_interface',
+    #     executable='slam_pos_bridge',
+    #     output='screen',
+    # )
 
     # slam = Node(
     #     package='slam_toolbox',
@@ -86,40 +87,28 @@ def generate_launch_description():
     #     }]
     # )
 
-    slam = Node(
-        package='slam_toolbox',
-        executable='async_slam_toolbox_node',
-        name='slam_toolbox',
-        output='screen',
-        parameters=[
-            get_package_share_path('drone_bringup') 
-            / 'config' 
-            / 'slam_toolbox_indoor_drone.yaml',
-        ]
-    )
-
-    slam2 = IncludeLaunchDescription(
+    slam = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            get_package_share_path('slam_toolbox') 
-            / 'launch' 
-            / 'online_async_launch.py',
+            str(get_package_share_path('slam_toolbox') 
+                / 'launch' 
+                / 'online_async_launch.py')
         ),
-       launch_arguments={
-           'params_file': 
-                get_package_share_path('drone_bringup') 
-                / 'config' 
-                / 'slam_toolbox_indoor_drone.yaml',
-       }.items(),
+        launch_arguments={
+           'slam_params_file': 
+                str(get_package_share_path('drone_bringup') 
+                    / 'config' 
+                    / 'slam_toolbox_indoor_drone.yaml'),
+        }.items(),
     )
 
     return LaunchDescription([
         agent,
 
-        lidar_tf,
+        # lidar_tf,
         # camera_tf,
         # range_tf,
         px4_odom,
 
         slam,
-        slam_pos,
+        # slam_pos # dont use, better to keep SLAM Separate and use velocity control 
     ])

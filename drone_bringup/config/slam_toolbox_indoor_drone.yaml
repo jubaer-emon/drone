@@ -42,8 +42,8 @@
     loop_match_minimum_response_coarse: 0.35
 
     # Drone motion thresholds
-    minimum_travel_distance: 0.02
-    minimum_travel_heading: 0.02
+    minimum_travel_distance: 0.10
+    minimum_travel_heading: 0.174
 
     # Search windows
     coarse_search_space_offset: 0.5

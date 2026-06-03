@@ -29,7 +29,7 @@ def generate_launch_description():
 
     px4_sitl = ExecuteProcess(
         cmd=['./build/px4_sitl_default/bin/px4'],
-        cwd=dev_dir / 'PX4-Autopilot',
+        cwd=str(dev_dir / 'PX4-Autopilot'),
         additional_env= {
             'PX4_GZ_WORLD': 'simple_room',
             'PX4_SYS_AUTOSTART': '4001',
@@ -57,15 +57,17 @@ def generate_launch_description():
 
     common_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            get_package_share_path('drone_bringup') 
-            / 'launch' / 'common.launch.py'
+            str(get_package_share_path('drone_bringup') 
+                / 'launch' 
+                / 'common.launch.py')
         )
     )
 
     gcs = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            get_package_share_path('drone_bringup') 
-            / 'launch' / 'gcs.launch.py'
+            str(get_package_share_path('drone_bringup') 
+                / 'launch' 
+                / 'gcs.launch.py')
         )
     )
 

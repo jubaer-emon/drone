@@ -31,7 +31,6 @@ public:
 private:
     void callback(const VehicleOdometry::SharedPtr msg)
     {
-        // RCLCPP_INFO(this->get_logger(), "Got PX4 odom");
         using namespace px4_ros_com::frame_transforms;
 
         // Position
@@ -48,7 +47,12 @@ private:
 
         nav_msgs::msg::Odometry odom;
 
-        odom.header.stamp = rclcpp::Time(msg->timestamp * 1000); // PX4 is in microseconds        odom.header.frame_id = "odom";
+        // Fetch synced simulation/clock time context
+        rclcpp::Time current_time = this->get_clock()->now();
+        // rclcpp::Time current_time = rclcpp::Time(msg->timestamp * 1000); // PX4 is in microseconds
+        
+        odom.header.stamp = current_time;
+        odom.header.frame_id = "odom";
         odom.child_frame_id = "base_link";
 
         // Pose
@@ -68,22 +72,46 @@ private:
 
         pub_->publish(odom);
 
-        geometry_msgs::msg::TransformStamped t;
+        // -------------------------------------------------------------
+        // TRANSFORM 1: odom -> base_link
+        // -------------------------------------------------------------
+        geometry_msgs::msg::TransformStamped t_odom;
 
-        t.header.stamp = odom.header.stamp;
-        t.header.frame_id = "odom";
-        t.child_frame_id = "base_link";
+        t_odom.header.stamp = current_time;
+        t_odom.header.frame_id = "odom";
+        t_odom.child_frame_id = "base_link";
 
-        t.transform.translation.x = pos_enu.x();
-        t.transform.translation.y = pos_enu.y();
-        t.transform.translation.z = pos_enu.z();
+        t_odom.transform.translation.x = pos_enu.x();
+        t_odom.transform.translation.y = pos_enu.y();
+        t_odom.transform.translation.z = pos_enu.z();
 
-        t.transform.rotation.w = q_enu.w();
-        t.transform.rotation.x = q_enu.x();
-        t.transform.rotation.y = q_enu.y();
-        t.transform.rotation.z = q_enu.z();
+        t_odom.transform.rotation.w = q_enu.w();
+        t_odom.transform.rotation.x = q_enu.x();
+        t_odom.transform.rotation.y = q_enu.y();
+        t_odom.transform.rotation.z = q_enu.z();
 
-        tf_broadcaster_->sendTransform(t);
+        tf_broadcaster_->sendTransform(t_odom);
+
+        // -------------------------------------------------------------
+        // TRANSFORM 2: base_link -> laser (Incorporated Static TF)
+        // -------------------------------------------------------------
+        geometry_msgs::msg::TransformStamped t_laser;
+
+        t_laser.header.stamp = current_time; // Strictly synced to the same clock
+        t_laser.header.frame_id = "base_link";
+        t_laser.child_frame_id = "laser";
+
+        // Adjust physical LiDAR offsets here if needed (e.g., raised 10cm up)
+        t_laser.transform.translation.x = 0.0;
+        t_laser.transform.translation.y = 0.0;
+        t_laser.transform.translation.z = 0.1;
+
+        t_laser.transform.rotation.w = 1.0;
+        t_laser.transform.rotation.x = 0.0;
+        t_laser.transform.rotation.y = 0.0;
+        t_laser.transform.rotation.z = 0.0;
+
+        tf_broadcaster_->sendTransform(t_laser);
     }
 
     rclcpp::Subscription<VehicleOdometry>::SharedPtr sub_;

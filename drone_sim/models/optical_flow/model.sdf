@@ -76,6 +76,9 @@
         <update_rate>50</update_rate>
         <visualize>true</visualize>
       </sensor>
+      <plugin filename="gz-sim-optical-flow-system"
+          name="gz::sim::systems::OpticalFlow">
+      </plugin>
     </link>
   </model>
 </sdf>

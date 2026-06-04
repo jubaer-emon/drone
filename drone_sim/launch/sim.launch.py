@@ -33,7 +33,7 @@ def generate_launch_description():
         additional_env= {
             'PX4_GZ_WORLD': 'simple_room',
             'PX4_SYS_AUTOSTART': '4001',
-            'PX4_SIM_MODEL': 'x500_lidar_2d',
+            'PX4_SIM_MODEL': 'x500_flow_lidar_2d',
             'PX4_GZ_STANDALONE': '1',
             # 'HEADLESS': '1',
         },
@@ -47,9 +47,10 @@ def generate_launch_description():
         arguments=[
             '/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
             '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
+            # '/fmu/in/vehicle_optical_flow@px4_msgs/msg/VehicleOpticalFlow[gz.msgs.CameraHomography',
             # '/camera/image_raw@sensor_msgs/msg/Image[gz.msgs.Image',
             # '/camera/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo',
-            # '/range@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
+            # '/fmu/in/distance_sensor@px4_msgs/msg/DistanceSensor[gz.msgs.LaserScan',
         ],
         output='screen',
     )

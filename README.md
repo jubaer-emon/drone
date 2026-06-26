@@ -37,6 +37,7 @@
 | COM_ARM_WO_GPS = 2    | Allows arming without a GPS home lock |
 | MPC_ALT_MODE = 0      | Fixed Altitude (not Terrain following)|
 | SYS_HAS_MAG = 0       |                                       |
+| SYS_HAS_GPS = 0       |                                       |
 
 ### Need to test
 | QGC Parameters        | Description                           |

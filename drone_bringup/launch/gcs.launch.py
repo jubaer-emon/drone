@@ -1,6 +1,7 @@
 from launch import LaunchDescription
-from launch.actions import ExecuteProcess, IncludeLaunchDescription
-from launch_ros.actions import Node
+from launch.actions import ExecuteProcess, DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node, SetParameter
 from launch.logging import get_logger
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 
@@ -9,6 +10,12 @@ from pathlib import Path
 
 def generate_launch_description():
     logger = get_logger('gcs.launch')
+
+    use_sim_time_arg = DeclareLaunchArgument(
+        'use_sim_time',
+        default_value='false',
+        description='Use simulation clock if true'
+    )
 
     qgc = ExecuteProcess(
         cmd=['./QGroundControl-x86_64.AppImage'],
@@ -25,11 +32,16 @@ def generate_launch_description():
                 / 'rviz' 
                 / 'nav2_default_view.rviz'),
         ],
-        # parameters=[{'use_sim_time': True}],
+        additional_env={
+            # 'DRI_PRIME': '1', 
+        },
         output='screen',
     )
 
     return LaunchDescription([
+        use_sim_time_arg,
+        SetParameter(name='use_sim_time', value=LaunchConfiguration('use_sim_time')),
+        
         rviz,
         qgc,
     ])
